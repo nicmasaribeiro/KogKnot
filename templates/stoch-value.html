@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #444;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #5cb85c;
+            color: white;
+            font-size: 18px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background-color: #4cae4c;
+        }
+        
+        #result {
+            margin-top: 20px;
+            font-size: 20px;
+            text-align: center;
+            padding: 10px;
+            background-color: #e7f3e7;
+            border: 1px solid #d6e9c6;
+            border-radius: 4px;
+            color: #3c763d;
+        }
+        
+        .formula {
+            font-size: 16px;
+            margin-top: 20px;
+            text-align: center;
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+    </style>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluate V(t, r, u, rho, alpha, K, S)</title>
+    <script>
+        // Define F(t) and B(t) functions here
+        function F(t) {
+            return Math.exp(-0.1 * t); // Example function for F(t)
+        }
+
+        function B(t) {
+            return t * Math.exp(-t); // Example function for B(t)
+        }
+
+        function f(s) {
+            // First term: s^2 * B(s)^2
+            const first_term = Math.pow(s, 2) * Math.pow(B(s), 2);
+            
+            // Second term: -2s * B(s) * integral of B(t) from 0 to s
+            const second_term = -2 * s * B(s) * integrate(B, s);
+            
+            // Third term: integral from 0 to s of (integral from 0 to s of B(x)^2 dx) dy
+            const inner_integral = (x) => Math.pow(B(x), 2);
+            const outer_integral = (y) => integrate(inner_integral, s); // Inner integral with respect to x
+            const third_term = integrate(outer_integral, s);
+            
+            // Calculate final f(s)
+            return first_term + second_term + third_term;
+        }
+
+        // Define the V function
+        function evaluateV(t, r, u, rho, alpha, K, S) {
+            const exp_r = Math.exp(r);
+            const exp_u_rho = Math.exp((u - (rho ** 2) / 2) * t + rho * B(t));
+            const term1 = F(t) * (1 - F(t) / K);
+            const term2 = exp_r * term1;
+            const term3 = exp_u_rho;
+            const term4 = F(t) * Math.pow(K, -r * t);
+
+            return (alpha - term2 - term3 + term4) / (F(t) * S(t, r));
+        }
+
+        // Example function for S(t, r)
+        function S(t, r) {
+            return 1 + 0.05 * t + 0.02 * r; // Example function for S(t, r)
+        }
+
+        // Function to read input values and display the result
+        function calculateV() {
+            const t = parseFloat(document.getElementById('t').value);
+            const r = parseFloat(document.getElementById('r').value);
+            const u = parseFloat(document.getElementById('u').value);
+            const rho = parseFloat(document.getElementById('rho').value);
+            const alpha = parseFloat(document.getElementById('alpha').value);
+            const K = parseFloat(document.getElementById('K').value);
+
+            const result = evaluateV(t, r, u, rho, alpha, K, S);
+            document.getElementById('result').innerText = `V = ${result.toFixed(6)}`;
+        }
+
+        // Simulation of V(t, r) over a range of t
+        function simulateV() {
+            const r = parseFloat(document.getElementById('r_sim').value);
+            const u = parseFloat(document.getElementById('u_sim').value);
+            const rho = parseFloat(document.getElementById('rho_sim').value);
+            const alpha = parseFloat(document.getElementById('alpha_sim').value);
+            const K = parseFloat(document.getElementById('K_sim').value);
+            const start_t = parseFloat(document.getElementById('start_t').value);
+            const end_t = parseFloat(document.getElementById('end_t').value);
+            const step_t = parseFloat(document.getElementById('step_t').value);
+
+            let output = "<table border='1'><tr><th>t</th><th>V(t)</th></tr>";
+
+            for (let t = start_t; t <= end_t; t += step_t) {
+                const V_t = evaluateV(t, r, u, rho, alpha, K, S);
+                output += `<tr><td>${t.toFixed(2)}</td><td>${V_t.toFixed(6)}</td></tr>`;
+            }
+
+            output += "</table>";
+            document.getElementById('simulationResult').innerHTML = output;
+        }
+    </script>
+</head>
+<body>
+
+    <div class="container">
+        <h4><a href="/stoch/tools">Back</a></h4>
+        
+        <h2>Calculate V(t, r, u, ρ, α, K)</h2>
+
+        <label for="t">t (time):</label>
+        <input type="number" id="t" value="1"><br><br>
+        
+        <label for="r">r (forward rate):</label>
+        <input type="number" id="r" value="0.05"><br><br>
+        
+        <label for="u">u (dirft):</label>
+        <input type="number" id="u" value="0.1"><br><br>
+        
+        <label for="rho">ρ (volatility):</label>
+        <input type="number" id="rho" value="0.2"><br><br>
+        
+        <label for="alpha">α (alpha):</label>
+        <input type="number" id="alpha" value="1"><br><br>
+        
+        <label for="K">K (constant K):</label>
+        <input type="number" id="K" value="100"><br><br>
+        
+        <button onclick="calculateV()">Calculate V</button>
+        
+        <div id="result"></div>
+</body>
+</html>

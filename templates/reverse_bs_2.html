@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Option Price and Derivatives Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        button {
+            width: 100%;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #45a049;
+        }
+
+        #output {
+            margin-top: 20px;
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #c8e6c9;
+        }
+
+        #output p {
+            margin: 10px 0;
+            font-size: 16px;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 14px;
+            color: #777;
+        }
+    </style>
+    <script>
+        function calculateStockPriceAndDerivatives(V, delta, K, T, r, sigma) {
+            function numericalDerivative(func, variable, dx = 1e-5) {
+                return (func(variable + dx) - func(variable - dx)) / (2 * dx);
+            }
+
+            function normCDF(x) {
+                return (1.0 + Math.erf(x / Math.sqrt(2))) / 2.0;
+            }
+
+            function deltaEquation(S) {
+                const d1 = (Math.log(S / K) + (r + (sigma ** 2) / 2) * T) / (sigma * Math.sqrt(T));
+                return normCDF(d1) - delta;
+            }
+
+            function findStockPrice(initialGuess) {
+                let S = initialGuess;
+                let error = deltaEquation(S);
+                let tolerance = 1e-6;
+                let maxIterations = 100;
+                let iterations = 0;
+
+                while (Math.abs(error) > tolerance && iterations < maxIterations) {
+                    const dS = 1e-5;
+                    const derivative = (deltaEquation(S + dS) - deltaEquation(S - dS)) / (2 * dS);
+                    S -= error / derivative;
+                    error = deltaEquation(S);
+                    iterations++;
+                }
+                return S;
+            }
+
+            const initialGuess = K;
+            const stockPrice = findStockPrice(initialGuess);
+
+            function optionValue(S) {
+                const d1 = (Math.log(S / K) + (r + (sigma ** 2) / 2) * T) / (sigma * Math.sqrt(T));
+                const d2 = d1 - sigma * Math.sqrt(T);
+                return S * normCDF(d1) - K * Math.exp(-r * T) * normCDF(d2);
+            }
+
+            function optionValueWithTime(T_val) {
+                const d1 = (Math.log(stockPrice / K) + (r + (sigma ** 2) / 2) * T_val) / (sigma * Math.sqrt(T_val));
+                const d2 = d1 - sigma * Math.sqrt(T_val);
+                return stockPrice * normCDF(d1) - K * Math.exp(-r * T_val) * normCDF(d2);
+            }
+
+            const theta = numericalDerivative(optionValueWithTime, T);
+
+            function optionValueWithMaturity(T_val) {
+                return optionValue(stockPrice);
+            }
+
+            const maturitySensitivity = numericalDerivative(optionValueWithMaturity, T);
+
+            return {
+                stockPrice: stockPrice,
+                theta: theta,
+                maturitySensitivity: maturitySensitivity
+            };
+        }
+
+        function calculate() {
+        
+            const V = parseFloat(document.getElementById("V").value);
+            const delta = parseFloat(document.getElementById("delta").value);
+            const K = parseFloat(document.getElementById("K").value);
+            const T = parseFloat(document.getElementById("T").value);
+            const r = parseFloat(document.getElementById("r").value);
+            const sigma = parseFloat(document.getElementById("sigma").value);
+
+
+            const results = calculateStockPriceAndDerivatives(V, delta, K, T, r, sigma);
+            alert(results);
+            return results;
+        }
+
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Option Price and Derivatives Calculator</h1>
+        <form id="calculatorForm">
+            <label for="V">Option Value (V):</label>
+            <input type="number" id="V" step="any" required>
+
+            <label for="delta">Delta (Δ):</label>
+            <input type="number" id="delta" step="any" required>
+
+            <label for="K">Strike Price (K):</label>
+            <input type="number" id="K" step="any" required>
+
+            <label for="T">Time to Maturity (T):</label>
+            <input type="number" id="T" step="any" required>
+
+            <label for="r">Risk-Free Rate (r):</label>
+            <input type="number" id="r" step="any" required>
+
+            <label for="sigma">Volatility (σ):</label>
+            <input type="number" id="sigma" step="any" required>
+
+            <button type="submit">Calculate</button>
+        </form>
+        <div id="output"></div>
+    </div>
+    <footer>
+        &copy; 2024 Option Calculator. All rights reserved.
+    </footer>
+</body>
+</html>

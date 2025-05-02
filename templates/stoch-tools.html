@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+	<head>	<meta name="viewport" content="width=device-width, initial-scale=1">
+		
+		<meta charset="UTF-8">
+		<title>Stochastic Tools</title>
+		<style>
+			body {
+				font-family: Arial, sans-serif;
+				background-color: #f4f4f4;
+				margin: 0; t
+				padding: 20px;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+			}
+
+			a {
+				text-decoration: none;
+				color: #ffffff;
+				font-size: 16px;
+				margin: 10px;
+				padding: 12px 20px;
+				background-color: #007bff;
+				border-radius: 4px;
+				display: inline-block;
+				transition: background-color 0.3s ease;
+				box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+			}
+
+			a:hover {
+				background-color: #0056b3;
+			}
+
+			.btn-link {
+				background-color: #28a745;
+				padding: 10px 15px;
+				margin: 10px;
+				border-radius: 5px;
+				color: white;
+				font-size: 16px;
+			}
+
+			.btn-link:hover {
+				background-color: #218838;
+			}
+
+			/* Specific buttons styling */
+			a.f2 {
+				background-color: #ffc107;
+			}
+
+			a.f2:hover {
+				background-color: #e0a800;
+			}
+
+			h1 {
+				color: #333;
+				margin-bottom: 40px;
+				text-align: center;
+			}
+
+			/* Container for links */
+			.links-container {
+				display: flex;
+				flex-wrap: wrap;
+				justify-content: center;
+				gap: 15px;
+				width: 80%;
+				max-width: 1200px;
+			}
+		</style>
+	</head>
+	<body>
+		<h4><a href="/">Back</a></h4>
+		<h1>Stochastic Tools Dashboard</h1>
+		<div class="links-container">
+			<a href="/stoch/price-classic"><i class="fas fa-sign-in-alt"></i> P(t,r) – Classical Stochastic Pricing Algorithm</a>
+
+			<a href="/stoch/fs"><i class="fas fa-sign-in-alt"></i> F(s) – Filtration Algorithm</a>
+			<a href="/stoch/g(t,r)"><i class="fas fa-user-plus"></i> G(t,r) – Stochastic Growth</a>
+			<a href="/stoch/forward-rate"><i class="fas fa-user-plus"></i> F(t,r) – Stochastic Forward Rate</a>
+			<a href="/stoch/g&f&s" class="btn btn-link"><i class="fas fa-chart-line"></i> Softmax • Filtration • Growth  • Forward Rate</a>
+			
+			<a href="/stoch/p(t,r)" class="btn btn-link"><i class="fas fa-chart-line"></i> P(t,r) – Stochastic Option Price</a>
+			<a href="/stoch/value" class="btn btn-link"><i class="fas fa-chart-bar"></i> V(•) – Reverse Value Algorithm </a>
+			<a href="/stoch/Ft" class="btn btn-link"><i class="fas fa-sitemap"></i> F(t) – Adaptive Filtration Mass Function  </a>
+			<a href="/stoch/C(s)" class="btn btn-link"><i class="fas fa-calculator"></i> C(s) – Stochastic Volume Differential Measure</a>
+			<a href="/stoch/v(t)" class="btn btn-link"><i class="fas fa-calculator"></i> V(t) – Pricing Volume Differential Measure</a>
+			<a href="/stoch/S(t,r)" class="btn btn-link"><i class="fas fa-superscript"></i> S(t,r) – Stochastic Forward Rate </a>
+			<a href="/stoch/f3" class="btn btn-link"><i class="fas fa-superscript"></i> f(s,u) – Filtration Over Double Interaction </a>
+			<a href="/stoch/price-expanded" class="btn btn-link"><i class="fas fa-superscript"></i> P(•) – Expanded Stochastic Option Price </a>
+			<a href="/stoch/p4" class="btn btn-link"><i class="fas fa-superscript"></i> P4 – Expanded Stochastic Stock Price </a>
+			<a href="/transform_coef" class="btn btn-link"><i class="fas fa-superscript"></i> Estimate Coefficients for Filtration Algorithm </a>
+		</div>
+	</body>
+</html>
