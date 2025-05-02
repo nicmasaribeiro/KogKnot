@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Interactive Notebook Editor</title>
+    <script>
+        const preloadedCells = {{ cells | tojson | safe }};
+        const notebookTitle = "{{ notebook_name | escape }}";
+    </script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        .cell {
+            margin-bottom: 30px;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .cell-header {
+            background-color: #f8f9fa;
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+        }
+        .cell-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .editor-container {
+            height: 200px;
+            border: 1px solid #ddd;
+        }
+        .markdown-editor-container {
+            height: 150px;
+            border: 1px solid #ddd;
+        }
+        .output {
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-top: 1px solid #eee;
+            font-family: 'Courier New', Courier, monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .output.success {
+            border-left: 4px solid #4CAF50;
+        }
+        .output.error {
+            border-left: 4px solid #f44336;
+            color: #f44336;
+        }
+        .markdown-preview {
+            padding: 15px;
+            background-color: #fffbe7;
+        }
+        button {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        button.run-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        button.run-btn:hover {
+            background-color: #3e8e41;
+        }
+        button.toggle-btn {
+            background-color: #2196F3;
+            color: white;
+        }
+        button.toggle-btn:hover {
+            background-color: #0b7dda;
+        }
+        button.delete-btn {
+            background-color: #f44336;
+            color: white;
+        }
+        button.delete-btn:hover {
+            background-color: #d32f2f;
+        }
+        .add-cell-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .add-cell-btn {
+            background-color: #673AB7;
+            color: white;
+            padding: 8px 16px;
+        }
+        .add-cell-btn:hover {
+            background-color: #5e35b1;
+        }
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .controls button {
+            padding: 8px 16px;
+        }
+        .save-btn {
+            background-color: #FF9800;
+            color: white;
+        }
+        .save-btn:hover {
+            background-color: #e68a00;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs/loader.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-book"></i> Editing: {{ notebook_name }}</h1>
+        
+        <div class="controls">
+            <button class="add-cell-btn" id="addCode"><i class="fas fa-plus"></i> Add Code Cell</button>
+            <button class="add-cell-btn" id="addMarkdown"><i class="fas fa-plus"></i> Add Markdown Cell</button>
+            <button class="save-btn" id="saveNotebook"><i class="fas fa-save"></i> Save Notebook</button>
+        </div>
+        
+        <div id="cells">
+            {% for cell in cells %}
+                <div class="cell" data-cell-type="{{ cell.type }}" data-cell-id="{{ loop.index }}">
+                    <div class="cell-header">
+                        <span>{{ cell.type|title }} Cell {{ loop.index }}</span>
+                        <div class="cell-actions">
+                            {% if cell.type == "markdown" %}
+                                <button class="toggle-btn"><i class="fas fa-eye"></i> Toggle Preview</button>
+                            {% else %}
+                                <button class="run-btn"><i class="fas fa-play"></i> Run</button>
+                            {% endif %}
+                            <button class="delete-btn"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="{% if cell.type == 'code' %}editor-container{% else %}markdown-editor-container{% endif %}"></div>
+                    {% if cell.type == "code" %}
+                        <div class="output {% if cell.output and 'Error' in cell.output[0] %}error{% endif %}">
+                            {% if cell.output %}
+                                {% for out in cell.output %}
+                                    <pre>{{ out }}</pre>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <div class="markdown-preview hidden"></div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+
+    <script>
+        let editors = [];
+        let markdownPreviews = [];
+        
+        // Initialize Monaco Editor
+        require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs' }});
+        require(["vs/editor/editor.main"], function() {
+            // Initialize existing cells
+            preloadedCells.forEach((cell, index) => {
+                const type = cell.type;
+                const content = cell.content || "";
+                const output = cell.output || [];
+                
+                addNewCell(type, content, output);
+            });
+
+                
+                editors.push({
+                    editor,
+                    cell,
+                    type: cellType
+                });
+                
+                if (cellType === 'markdown') {
+                    const preview = cell.querySelector('.markdown-preview');
+                    preview.innerHTML = marked.parse(editor.getValue());
+                    markdownPreviews.push(preview);
+                }
+            });
+            
+            // Add event listeners
+            document.querySelectorAll('.run-btn').forEach(btn => {
+                btn.addEventListener('click', runCodeCell);
+            });
+            
+            document.querySelectorAll('.toggle-btn').forEach(btn => {
+                btn.addEventListener('click', toggleMarkdownPreview);
+            });
+            
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', deleteCell);
+            });
+            
+            // Add new cell buttons
+            document.getElementById('addCode').addEventListener('click', () => addNewCell('code'));
+            document.getElementById('addMarkdown').addEventListener('click', () => addNewCell('markdown'));
+            document.getElementById('saveNotebook').addEventListener('click', saveNotebook);
+            
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                editors.forEach(e => e.editor.layout());
+            });
+        });
+        
+        function runCodeCell(e) {
+            const cell = e.target.closest('.cell');
+            const editor = editors.find(e => e.cell === cell).editor;
+            const outputDiv = cell.querySelector('.output');
+            
+            outputDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running...';
+            
+            fetch("/app/evaluate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ code: editor.getValue() })
+            })
+            .then(res => res.json())
+            .then(data => {
+                outputDiv.innerHTML = `<pre>${data.result || "✅ Execution completed with no output"}</pre>`;
+                outputDiv.className = "output success";
+            })
+            .catch(err => {
+                outputDiv.innerHTML = `<pre>❌ Error: ${err.message}</pre>`;
+                outputDiv.className = "output error";
+            });
+        }
+        
+        function toggleMarkdownPreview(e) {
+            const cell = e.target.closest('.cell');
+            const editorContainer = cell.querySelector('.markdown-editor-container');
+            const preview = cell.querySelector('.markdown-preview');
+            const btn = e.target.closest('button');
+            
+            if (preview.classList.contains('hidden')) {
+                // Show preview
+                const editor = editors.find(e => e.cell === cell).editor;
+                preview.innerHTML = marked.parse(editor.getValue());
+                preview.classList.remove('hidden');
+                editorContainer.classList.add('hidden');
+                btn.innerHTML = '<i class="fas fa-code"></i> Edit';
+            } else {
+                // Show editor
+                preview.classList.add('hidden');
+                editorContainer.classList.remove('hidden');
+                btn.innerHTML = '<i class="fas fa-eye"></i> Preview';
+            }
+        }
+        
+        function deleteCell(e) {
+            if (confirm("Are you sure you want to delete this cell?")) {
+                const cell = e.target.closest('.cell');
+                const editorIndex = editors.findIndex(e => e.cell === cell);
+                
+                if (editorIndex !== -1) {
+                    editors[editorIndex].editor.dispose();
+                    editors.splice(editorIndex, 1);
+                }
+                
+                cell.remove();
+                renumberCells();
+            }
+        }
+        
+        function addNewCell(type, content = "", output = []) {
+            const cellId = Date.now();
+            const cellsContainer = document.getElementById('cells');
+            
+            const cellHTML = `
+        <div class="cell" data-cell-type="${type}" data-cell-id="${cellId}">
+            <div class="cell-header">
+                <span>${type === 'code' ? 'Code' : 'Markdown'} Cell</span>
+                <div class="cell-actions">
+                    ${type === 'code' ? 
+            '<button class="run-btn"><i class="fas fa-play"></i> Run</button>' : 
+            '<button class="toggle-btn"><i class="fas fa-eye"></i> Toggle Preview</button>'}
+                    <button class="delete-btn"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+            <div class="${type === 'code' ? 'editor-container' : 'markdown-editor-container'}"></div>
+            ${type === 'code' ? 
+            `<div class="output">${output.map(o => `<pre>${o}</pre>`).join("")}</div>` : 
+            '<div class="markdown-preview hidden"></div>'}
+        </div>
+    `;
+            
+            const cellElement = document.createRange().createContextualFragment(cellHTML);
+            cellsContainer.appendChild(cellElement);
+            
+            const newCell = cellsContainer.lastElementChild;
+            const editorContainer = newCell.querySelector('.editor-container, .markdown-editor-container');
+            
+            const editor = monaco.editor.create(editorContainer, {
+                value: content,
+                language: type === 'code' ? 'python' : 'markdown',
+                theme: 'vs',
+                automaticLayout: true,
+                minimap: { enabled: false },
+                scrollBeyondLastLine: false
+            });
+            
+            editors.push({
+                editor,
+                cell: newCell,
+                type
+            });
+            
+            if (type === 'markdown') {
+                const preview = newCell.querySelector('.markdown-preview');
+                markdownPreviews.push(preview);
+            }
+            
+            // Add event listeners to new buttons
+            if (type === 'code') {
+                newCell.querySelector('.run-btn').addEventListener('click', runCodeCell);
+            } else {
+                newCell.querySelector('.toggle-btn').addEventListener('click', toggleMarkdownPreview);
+            }
+            newCell.querySelector('.delete-btn').addEventListener('click', deleteCell);
+            
+            renumberCells();
+        }
+            editors.push({
+                editor,
+                cell: newCell,
+                type
+            });
+            
+            if (type === 'markdown') {
+                const preview = newCell.querySelector('.markdown-preview');
+                markdownPreviews.push(preview);
+            }
+            
+            // Add event listeners to new buttons
+            if (type === 'code') {
+                newCell.querySelector('.run-btn').addEventListener('click', runCodeCell);
+            } else {
+                newCell.querySelector('.toggle-btn').addEventListener('click', toggleMarkdownPreview);
+            }
+            newCell.querySelector('.delete-btn').addEventListener('click', deleteCell);
+            
+            renumberCells();
+        }
+        
+        function renumberCells() {
+            let codeCount = 1;
+            let markdownCount = 1;
+            
+            editors.forEach(editorObj => {
+                const header = editorObj.cell.querySelector('.cell-header span');
+                if (editorObj.type === "code") {
+                    header.textContent = `Code Cell ${codeCount++}`;
+                } else {
+                    header.textContent = `Markdown Cell ${markdownCount++}`;
+                }
+            });
+        }
+        
+        function saveNotebook() {
+            const notebookData = editors.map(editorObj => {
+                const cell = {
+                    type: editorObj.type,
+                    content: editorObj.editor.getValue()
+                };
+                
+                if (editorObj.type === 'code') {
+                    const outputDiv = editorObj.cell.querySelector('.output');
+                    cell.output = outputDiv.textContent.trim() ? [outputDiv.textContent.trim()] : [];
+                }
+                
+                return cell;
+            });
+            
+            fetch("/app/save_user_notebook", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    notebook: notebookData,
+                    name: "{{ notebook_name }}"
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message || "Notebook saved successfully!");
+            })
+            .catch(error => {
+                alert("Error saving notebook: " + error.message);
+            });
+        }
+    </script>
+</body>
+</html>

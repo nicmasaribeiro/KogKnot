@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Dashboard</title>
+    <style>
+        <style>
+        /* General Layout */
+        body {
+            font-family: sans-serif;
+            background-color: #e5e9f0;
+            margin: 0;
+            padding-top: 50px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            padding: 40px 20px;
+            text-align: center;
+            background-color: #fff;
+            border-radius: 16px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease-in-out;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+        
+        /* Dashboard Grid */
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        /* Dashboard Buttons */
+        .dashboard a {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            text-decoration: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .dashboard a:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            background: linear-gradient(135deg, #0056b3, #003d82);
+        }
+        
+        .dashboard a i {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: #f0f0f0;
+            transition: color 0.3s;
+        }
+        
+        .dashboard a:hover i {
+            color: #fff;
+        }
+        
+        /* Tooltip Styling */
+        .tooltip {
+            visibility: hidden;
+            width: 200px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            bottom: 120%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+            font-size: 0.9rem;
+        }
+        
+        .dashboard a:hover {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .tooltip:hover{
+            visibility: visible;
+        }
+        
+        .tooltip::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -6px;
+            border-width: 6px;
+            border-style: solid;
+            border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
+        }
+        
+        /* Search Bar */
+        #search-bar {
+            width: 80%;
+            max-width: 600px;
+            margin: 30px auto;
+            padding: 12px 15px;
+            font-size: 1rem;
+            border: 2px solid #ddd;
+            border-radius: 25px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        
+        #search-bar:focus {
+            border-color: #007bff;
+            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.4);
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 15px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .dashboard a {
+                font-size: 1rem;
+                padding: 15px;
+            }
+            
+            .dashboard a i {
+                font-size: 1.6rem;
+            }
+            
+            #search-bar {
+                width: 90%;
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+            
+            button {
+                color: blue;
+                background: blue;
+            }
+        }
+    </style>
+    
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Financial Tools Dashboard</h1>
+        <div class="dashboard">
+            <a href="/basic/dcf">
+                <i class="fas fa-chart-line"></i> Basic DCF
+                <span class="tooltip">Discounted Cash Flow calculation for fundamental analysis.</span>
+            </a>
+            <a href="/create_options">
+                <i class="fas fa-chart-line"></i> Create Option Chain
+                <span class="tooltip">Create the dataset of options for specified company</span>
+            </a>
+            <a href="/chain/filtered">
+                <i class="fas fa-chart-line"></i> Filtered Option Chain
+                <span class="tooltip">View the dataset of options for specified company</span>
+            </a>
+            <a href="/admix">
+                <i class="fas fa-chart-line"></i> Forecast Graphs
+                <span class="tooltip">Visualize forecasted financial metrics and trends.</span>
+            </a>
+            <a href="/option/probdist">
+                <i class="fas fa-chart-line"></i> Probability Distribution Option
+                <span class="tooltip">Analyze the probability distribution for option pricing.</span>
+            </a>
+            <a href="/stats">
+                <i class="fas fa-chart-bar"></i> Cov(s) & Cor(s)
+                <span class="tooltip">Calculate covariance and correlation statistics between assets.</span>
+            </a>
+            <a href="/yc">
+                <i class="fas fa-chart-bar"></i> Simple Yield Curve Prediction
+                <span class="tooltip">Generate simple yield curve predictions using historical data.</span>
+            </a>
+            <a href="/test">
+                <i class="fas fa-chart-bar"></i> Normalized Data Trends
+                <span class="tooltip">Generate graph that compares normalized series of a portfolio of stocks</span>
+            </a>
+            <a href="stoch/yc-stoch-filt">
+                <i class="fas fa-chart-bar"></i> Yield Curve Stochastic
+                <span class="tooltip">Apply stochastic filtering to predict yield curves.</span>
+            </a>
+            <a href="/tree">
+                <i class="fas fa-sitemap"></i> Binomial Matrix
+                <span class="tooltip">Create a binomial lattice for pricing options.</span>
+            </a>
+            <a href="/price">
+                <i class="fas fa-calculator"></i> Options Pricing
+                <span class="tooltip">Calculate the pricing of different financial options.</span>
+            </a>
+            <a href="/stats/binom">
+                <i class="fas fa-superscript"></i> Binomial Coefficients
+                <span class="tooltip">Compute binomial coefficients for statistical analysis.</span>
+            </a>
+            <a href="/implied-vol">
+                <i class="fas fa-superscript"></i> Implied Volatility
+                <span class="tooltip">Estimate implied volatility for options.</span>
+            </a>
+            <a href="/live/valuations">
+                <i class="fas fa-superscript"></i> Live Valuations
+                <span class="tooltip">Access live valuations for selected financial assets.</span>
+            </a>
+            <a href="/neutral-measure">
+                <i class="fas fa-superscript"></i> Stock Risk Neutral Coefficient
+            </a>
+            <a href="/kappa">
+                <i class="fas fa-superscript"></i> Mean Reversion  & Long-Term Mean
+            </a>
+            <a href="/indicator-measure">
+                <i class="fas fa-superscript"></i> Portfolio Frontier Confidence Measure  
+            </a>
+            <a href="/coef-calibration">
+                <i class="fas fa-superscript"></i> Portfolio Spread and Reversion Estimation
+                <span class="tooltip">Calibrate spread and reversion coefficients for portfolios.</span>
+            </a>
+            <a href="/single-reversion-coef">
+                <i class="fas fa-superscript"></i> Stock Reversion Coefficient
+                <span class="tooltip">Estimate reversion coefficients for individual stocks.</span>
+            </a>
+            <a href="/single-stock-calibration">
+                <i class="fas fa-superscript"></i> Stock Spread Coefficients
+                <span class="tooltip">Calibrate spread coefficients for a single stock.</span>
+            </a>
+            <a href="/single-stock-risk-neutral">
+                <i class="fas fa-superscript"></i> Stock Risk Neutral Coefficient 2
+                <span class="tooltip">Calculate the risk-neutral coefficient for individual stocks.</span>
+            </a>
+            <a href="/mu-sigma">
+                <i class="fas fa-superscript"></i> Mu-Sigma Price Forecast
+                <span class="tooltip">Forecast stock prices using the Mu-Sigma model.</span>
+            </a>
+            <a href="/stoch/price">
+                <i class="fas fa-superscript"></i> Stochastic Price Simulation
+                <span class="tooltip">Simulate stock prices using stochastic models.</span>
+            </a>
+            
+            <a href="/pca">
+                <i class="fas fa-superscript"></i> Portfolio Risk Breakdown Analysis
+                <span class="tooltip">PCA of portfolio to discover the risk breakdown</span>
+            </a>
+            
+            <a href="/equity-risk-premium">
+                <i class="fas fa-superscript"></i> Implied Equity Risk Premium
+                <span class="tooltip">Determine the implied equity risk premium for investments.</span>
+            </a>
+            <a href="/forward-rate-empirical">
+                <i class="fas fa-superscript"></i> Stock Forward Rate
+                <span class="tooltip">Calculate empirical forward rates for stocks.</span>
+            </a>
+            
+            <a href="/annualize">
+                <i class="fas fa-superscript"></i> Annualize Rates
+                <span class="tooltip">Calculate annualize rates for stocks.</span>
+            </a>
+            <a href="/ddm-spread">
+                <i class="fas fa-superscript"></i> DDM Spread Coefficient
+                <span class="tooltip">Calculate DDM Spread Coefficient.</span>
+            </a>
+            
+            <a href="/ddm">
+                <i class="fas fa-superscript"></i> DDM Valuation
+                <span class="tooltip">Calculate DDM Valuation.</span>
+            </a>
+            
+            <a href="/option-density-model">
+                <i class="fas fa-superscript"></i> Option Density Model
+                <span class="tooltip">Calculate Option Price.</span>
+            </a>
+            
+            <a href="/binary-search">
+                <i class="fas fa-superscript"></i> Binary Search Model
+                <span class="tooltip">Calculate Stock Price based on option price</span>
+            </a>
+            
+            <a href="/multicurve">
+                <i class="fas fa-superscript"></i> Multi-Period Rate to Intermediate Forward Rate
+                <span class="tooltip">Multi-Period Rate to Intermediate Forward Rate.</span>
+            </a>
+            
+            <a href="/greeks">
+                <i class="fas fa-superscript"></i> Option Greek Calculation
+                <span class="tooltip">Calculate Greeks of a given option contract.</span>
+            </a>
+            
+            <a href="/stoch/greeks">
+                <i class="fas fa-superscript"></i> Stochastic Greeks
+                <span class="tooltip">Calculate Greeks of Stochastic Algorithm</span>
+            </a>
+            
+            <a href="/wacc">
+                <i class="fas fa-superscript"></i> Calculate Rates
+                <span class="tooltip">Calculate Rates of Company</span>
+            </a>
+            
+            <a href="/options/pricing">
+                <i class="fas fa-superscript"></i> Stock from Call Algorithm
+                <span class="tooltip">Algorithm to Calculate Stock from Call.</span>
+            </a>
+            
+            <a href="/stock-from-put">
+                <i class="fas fa-superscript"></i> Stock from Put Algorithm
+                <span class="tooltip">Algorithm to Calculate Stock from Put.</span>
+            </a>
+            
+            <a href="/filtration">
+                <i class="fas fa-superscript"></i> Stock Filtration Algorithm
+                <span class="tooltip">Algorithm to Calculate Stock-Index Filtration.</span>
+            </a>
+            
+            <a href="/max/forecast">
+                <i class="fas fa-superscript"></i> Max Forecast Security
+                <span class="tooltip">Display Prediction</span>
+            </a>
+            
+            <a href="/fundamentals">
+                <i class="fas fa-superscript"></i> Valuation Fundamentals
+                <span class="tooltip">Calculate Target Company Valuation Fundamentals</span>
+            </a>
+            <a href="/dV">
+                <i class="fas fa-superscript"></i> Rates Curvature
+            </a>
+<!--        -->
+<!--        <button onclick="search();" style="background-color: blue;color: white;">token parameters</button>-->
+<!--            -->
+            
+            <button onclick="get_options_chain();" style="background-color: blue;color: white;">Simple Options Chain</button>
+            
+            
+            <script>
+                function search(){
+                    var p = prompt();
+                    window.location='/token-parameters/'+ p;
+                }
+                
+                function GetAsset(){
+                    var id = prompt("Enter Asset ID","ID");
+                    window.location.href = '/asset/info/'+ id;
+                }
+                
+                function get_options_chain(){
+                    var ticker = prompt("Enter Asset Ticker","AAPL,IBM,MSFT");
+                    window.location.href = '/options/chain/'+ ticker.toUpperCase();
+                }
+                function get_chain(){
+                    var ticker = prompt("Enter Asset Ticker","AAPL,IBM,MSFT");
+                    window.location.href = '/chain/'+ ticker.toUpperCase();
+                }
+            </script>
+            
+            <a href="/drift&vol">
+                <i class="fas fa-superscript"></i> Drift & Volatility Coefficiemts
+            </a>
+            
+        <a href="https://pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/ratings.html">
+                <i class="fas fa-superscript"></i> Interest Coverage and Default Spread
+                <span class="tooltip">Interest Coverage Ratios and Default Spread</span>
+        </a>
+            <a href="/stoch/tools">
+                <i class="fas fa-superscript"></i> Stochastic Tools
+                <span class="tooltip">Access various stochastic modeling tools.</span>
+            </a>
+        </div>
+    </div>
+<br>
+<div>
+    <input type="text" id="search-bar" placeholder="Search tools..." onkeyup="filterDashboard()" />
+</div>
+
+    <script>
+        function filterDashboard() {
+            const input = document.getElementById('search-bar').value.toLowerCase();
+            const tools = document.querySelectorAll('.dashboard a');
+            tools.forEach(tool => {
+                const text = tool.textContent || tool.innerText;
+                tool.style.display = text.toLowerCase().includes(input) ? '' : 'none';
+            });
+        }
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>📓 Notebook Manager</title>
+  <style>
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px; border-bottom: 1px solid #ddd; }
+    button { margin-left: 5px; }
+  </style>
+</head>
+<body>
+
+<h2>📁 Saved Notebooks</h2>
+
+<table>
+  <tr><th>Name</th><th>Actions</th></tr>
+  {% for f in files %}
+  <tr>
+    <td>{{ f }}</td>
+    <td>
+      <a href="{{ url_for('app.download_notebook_file', filename=f) }}">⬇️ Download</a>
+      |
+      <form method="post" action="{{ url_for('app.delete_notebook_file', filename=f) }}" style="display:inline;">
+        <button type="submit" onclick="return confirm('Delete {{ f }}?')">🗑️ Delete</button>
+      </form>
+      |
+      <a href="{{ url_for('app.load_uploaded_notebook', filename=f) }}">📝 Open</a> <!-- ✅ New Open link -->
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+
+<a href="{{ url_for('app.open_notebook') }}">📤 Upload New Notebook</a>
+
+</body>
+</html>
