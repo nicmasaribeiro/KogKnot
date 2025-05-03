@@ -68,49 +68,6 @@ import subprocess
 from kaggle_ui import kaggle_bp
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from flask import Blueprint, render_template, request, redirect, url_for, send_file,send_from_directory,jsonify
-from werkzeug.utils import secure_filename
-from models import NotebookSubmission, db
-import nbformat
-import os
-import nbformat
-from nbconvert.preprocessors import ExecutePreprocessor
-from flask_login import login_required, current_user
-from nbformat.v4 import new_notebook, new_code_cell
-import io
-import contextlib
-import requests
-import time
-from models import UserNotebook
-from flask import abort
-import markdown
-# from flask import Markup
-import json
-from markupsafe import Markup  # Instead of from flask import Markup
-import markdown
-from nbformat import reads as nbformat_reads
-from nbformat import NO_CONVERT
-from nbconvert.preprocessors import ExecutePreprocessor
-import base64
-import matplotlib
-matplotlib.use('Agg')  # Non-interactive backend
-import matplotlib.pyplot as plt
-from io import BytesIO
-from flask import current_app
-from markupsafe import Markup
-import markdown
-
-
-proxy_list = [
-"http://24.249.199.12:4145",
-"http://45.77.67.203:8080",
-"http://138.68.60.8:3128"
-"http://50.174.7.157:80",
-"http://172.66.43.12:80",
-"http://133.18.234.13:80",
-"http://81.169.213.169:8888",
-"http://194.158.203.14:80"
-]
 	
 
 logging.basicConfig(level=logging.INFO)
@@ -122,32 +79,18 @@ app.config['CACHE_DEFAULT_TIMEOUT'] = 300  # Cache timeout (in seconds)
 app.config['SESSION_TYPE'] = 'redis'
 app.config['SESSION_PERMANENT'] = False
 app.config['SESSION_USE_SIGNER'] = True
-app.config['SESSION_REDIS'] = redis.StrictRedis(host='redis-server', port=6379)
 
 cache = Cache(app)
 executor = Executor(app)
 
 DOWNLOAD_FOLDER = os.path.abspath("./local")  # or wherever your files are stored
 
-openai.api_key = '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'
-stripe.api_key = 'sk_test_51OncNPGfeF8U30tWYUqTL51OKfcRGuQVSgu0SXoecbNiYEV70bb409fP1wrYE6QpabFvQvuUyBseQC8ZhcS17Lob003x8cr2BQ'
-
-app.config['CELERY_BROKER_URL'] = 'redis://red-cv8uqftumphs738vdlb0:6379'
-app.config['CELERY_RESULT_BACKEND'] = 'redis://red-cv8uqftumphs738vdlb0:6379' 
-
 app.register_blueprint(kaggle_bp, url_prefix="/app")
  
-# app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
-# app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
-
-celery = Celery(app.import_name, broker=app.config['CELERY_BROKER_URL'])
-celery.conf.update(result_backend=app.config['CELERY_RESULT_BACKEND'])
-celery.conf.beat_schedule = {
-    'run-every-minute': {
-        'task': 'tasks.my_periodic_task',
-        'schedule': 60.0,  # Run every 60 seconds
-    },
-}
+@cache.cached(timeout=300)
+def get_yf_data(ticker):
+	proxy = YFinanceProxyWrapper(proxy_list)
+	return proxy.fetch(ticker, period='1wk', interval='1d')
 
 
 @login_manager.user_loader
@@ -239,7 +182,7 @@ def sell_cash():
 			return jsonify({'message': 'Insufficient Balance'}), 400
 	return render_template('sell-cash.html')
 
-@app.route('/index')
+@app.route('/')
 def base():
 	return render_template('index_base.html')
 
@@ -506,186 +449,8 @@ def sell_coins():
 		return f"""<a href='/'><h1>Home</h1></a><h3>Success</h3><p>You've successfully sold {value} coins.</p>"""
 	return render_template("sell.html")
 
-
-UPLOAD_FOLDER = "./submissions"
-ALLOWED_EXTENSIONS = {"ipynb"}
-NOTEBOOK_FOLDER = "./submissions"
-
-# At the top of kaggle_ui.py
-def execute_code_cells(code_cells):
-    nb = new_notebook(cells=[new_code_cell(source=code) for code in code_cells])
-    ep = ExecutePreprocessor(timeout=60, kernel_name="python3")
-    try:
-        ep.preprocess(nb, {'metadata': {'path': './'}})
-    except Exception as e:
-        return nb, f"Execution error: {e}"
-    return nb, None
-
-def is_plotting_notebook(notebook_content):
-    """Check if notebook contains plotting code"""
-    try:
-        if isinstance(notebook_content, str):
-            content = json.loads(notebook_content)
-        else:
-            content = notebook_content
-            
-        plotting_keywords = ['plt.', 'plot(', 'figure(', 'show(', 'matplotlib']
-        
-        for cell in content:
-            if cell.get('type') == 'code':
-                code = cell.get('content', '')
-                if any(keyword in code for keyword in plotting_keywords):
-                    return True
-        return False
-    except:
-        return False
-
-def markdown_to_html(text):
-    """Convert markdown text to HTML"""
-    if not text:
-        return ""
-    return Markup(markdown.markdown(text))
-
-def register_template_filters(app):
-    """Register custom template filters"""
-    app.jinja_env.filters['markdown'] = markdown_to_html
-
-@app.after_request
-def after_request(response):
-    """Ensure all API responses are JSON"""
-    if request.path.startswith('/notebook/'):
-        if response.status_code >= 400:
-            data = {
-                "success": False,
-                "message": response.get_data(as_text=True)
-            }
-            response.set_data(json.dumps(data))
-            response.content_type = 'application/json'
-    return response
-
-@app.route("/notes")
-@login_required
-def notebook_manager():
-    notebooks = UserNotebook.query.filter_by(user_id=current_user.id).order_by(UserNotebook.updated_at.desc()).all()
-    return render_template("notebook_manager.html", notebooks=notebooks)
-
-
-def execute_notebook_and_capture(path):
-    with open(path) as f:
-        nb = nbformat.read(f, as_version=4)
-
-    ep = ExecutePreprocessor(timeout=60, kernel_name='python3')
-
-    try:
-        ep.preprocess(nb, {'metadata': {'path': './'}})
-    except Exception as e:
-        print("⚠️ Execution error:", e)
-
-    # Save back the executed notebook
-    with open(path, "w") as f:
-        nbformat.write(nb, f)
-
-    return nb
-
-
-
-@app.route("/")
-def kaggle_home():
-    submissions = NotebookSubmission.query.order_by(NotebookSubmission.score.desc()).all()
-    return render_template("kaggle_index.html", submissions=submissions)
-
-
-@app.route("/submit", methods=["GET", "POST"])
-@login_required
-def submit_notebook():
-    if request.method == "POST":
-        file = request.files["notebook"]
-        if file and file.filename.endswith(".ipynb"):
-            filename = secure_filename(file.filename)
-            full_path = os.path.join("submissions", f"{current_user.id}_{filename}")
-            file.save(full_path)
-
-            # ✅ Execute notebook and get outputs
-            nb = execute_notebook_and_capture(full_path)
-
-            # ✅ Optionally extract score from last cell
-            score = 0.0
-            for cell in reversed(nb.cells):
-                if cell.cell_type == "code" and cell.outputs:
-                    for output in cell.outputs:
-                        if output.output_type == "execute_result":
-                            try:
-                                score = float(output.data["text/plain"])
-                            except Exception:
-                                pass
-                            break
-
-            # ✅ Create leaderboard entry
-            submission = NotebookSubmission(
-                user_id=current_user.id,
-                notebook_filename=filename,
-                score=score
-            )
-            db.session.add(submission)
-
-            # ✅ Save cell contents and output into DB
-            notebook_payload = []
-            for cell in nb.cells:
-                output = []
-                if cell.cell_type == "code":
-                    for o in cell.get("outputs", []):
-                        if o.output_type == "stream":
-                            output.append(o.text)
-                        elif o.output_type == "execute_result":
-                            output.append(o['data'].get('text/plain', ''))
-                        elif o.output_type == "error":
-                            output.append('Error: ' + '\n'.join(o['traceback']))
-
-                notebook_payload.append({
-                    "type": cell.cell_type,
-                    "content": cell.source,
-                    "output": output
-                })
-
-            db_notebook = UserNotebook(
-                user_id=current_user.id,
-                name=f"Submitted: {filename}",
-                content=json.dumps(notebook_payload)
-            )
-            db.session.add(db_notebook)
-
-            db.session.commit()
-            return redirect(url_for("app.my_notebooks"))
-
-        return "Invalid file format. Please upload a .ipynb file.", 400
-
-    return render_template("submit_notebook.html")
-
-
-@app.route("/editor/save", methods=["POST"])
-def save_notebook_from_editor():
-    data = request.get_json()
-    name = data.get("name", "Untitled")
-    cells = data.get("notebook", [])
-
-    from models import Notebook
-    import json
-
-    nb = Notebook(
-        name=name,
-        content=json.dumps(cells),
-        user_id=getattr(current_user, 'id', None)
-    )
-    db.session.add(nb)
-    db.session.commit()
-
-    return "✅ Notebook saved", 200
-
-
-
-
 if __name__ == '__main__':
 	with app.app_context():
 		db.create_all()
 		PendingTransactionDatabase.genisis() 
-		app.run(host="0.0.0.0",port=1000)
+		app.run(host="0.0.0.0",port=2000)
