@@ -68,6 +68,11 @@ import subprocess
 from kaggle_ui import kaggle_bp
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_migrate import Migrate
+from models import db  # wherever db is defined
+
+migrate = Migrate(app, db)
+
 	
 stripe.api_key = 'sk_test_51OncNPGfeF8U30tWYUqTL51OKfcRGuQVSgu0SXoecbNiYEV70bb409fP1wrYE6QpabFvQvuUyBseQC8ZhcS17Lob003x8cr2BQ'
 
@@ -196,20 +201,17 @@ def signup():
             return jsonify({'error': 'Username already exists'}), 400
 
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-        unique_address = os.urandom(10).hex()
-        new_user = Customers(
-            username=username,
-            email=email,
-            cell_number=cell_number,
-            password=hashed_password,
-            personal_token=os.urandom(10).hex(),
-            private_token=unique_address,
-            payment_id='',        # use defaults or remove if nullable
-            wallet_id=''
-        )
+        # unique_address = os.urandom(10).hex()
+        # new_user = Customers(
+        #     username=username,
+        #     email=email,
+        #     cell_number=cell_number,
+        #     password=hashed_password,
+        #     personal_token=os.urandom(10).hex(),
+        #     private_token=unique_address)
 
-        db.session.add(new_user)
-        db.session.commit()
+        # db.session.add(new_user)
+        # db.session.commit()
         return jsonify({'message': 'User created!'}), 201
 
     return render_template("signup.html")

@@ -162,14 +162,14 @@ class NotebookSubmission(db.Model):
     notebook_filename = db.Column(db.String(128))
     score = db.Column(db.Float)
     submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('customers.id'))
 
 
 class UserNotebook(db.Model):
     published = db.Column(db.Boolean, default=False)
     published_at = db.Column(db.DateTime, default=db.func.now())
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("customers.id"), nullable=False)
     name = db.Column(db.String(128))
     content = db.Column(db.Text)  # JSON string (list of cells)
     created_at = db.Column(db.DateTime, default=db.func.now())
@@ -184,7 +184,7 @@ class DatasetMeta(db.Model):
     __tablename__ = 'dataset_meta'
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("customers.id"), nullable=False)
     filename = db.Column(db.String, nullable=False)
     description = db.Column(db.String, default="")
     uploaded_at = db.Column(db.DateTime, default=db.func.now())
