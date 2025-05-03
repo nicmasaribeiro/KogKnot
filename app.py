@@ -96,7 +96,7 @@ app.register_blueprint(kaggle_bp, url_prefix="/app")
 
 @login_manager.user_loader
 def load_user(user_id):
-    return Customers.query.get(int(id))
+    return Customers.query.get(int(user_id))
 
 @app.route('/buy/cash', methods=['GET'])
 @login_required
@@ -234,12 +234,13 @@ def create_wallet():
 				return jsonify({'message': 'Wallet Created!'}), 201
 	return render_template("signup-wallet.html")
 
-@app.route('/sign-in', methods=['POST', 'GET'])
+
+@app.route('/login', methods=['POST', 'GET'])
 def login():
 	if request.method == "POST":
 		username = request.values.get("username")
 		password = request.values.get("password")
-		user = Customers.query.filter_by(username=username).first()
+		user = Users.query.filter_by(username=username).first()
 		if user and bcrypt.check_password_hash(user.password, password):
 			login_user(user, remember=True)  # <-- Ensure "remember=True" for session persistence
 			return redirect('/')
@@ -247,7 +248,6 @@ def login():
 			flash("Invalid username or password. Please try again.", "danger")
 			return redirect('/login')
 	return render_template("login.html")
-
 
 @app.route('/get/users', methods=['GET'])
 @login_required
