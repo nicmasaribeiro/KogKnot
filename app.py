@@ -96,7 +96,7 @@ app.register_blueprint(kaggle_bp, url_prefix="/app")
 
 @login_manager.user_loader
 def load_user(user_id):
-	return Customers.query.get(int(user_id))
+    return Customers.query.get(int(id))
 
 @app.route('/buy/cash', methods=['GET'])
 @login_required
@@ -319,6 +319,6 @@ def sell_coins():
 
 if __name__ == '__main__':
 	with app.app_context():
-		db.create_all()
+		# db.create_all()
 		PendingTransactionDatabase.genisis() 
 		app.run(host="0.0.0.0",port=2000)
