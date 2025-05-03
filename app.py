@@ -188,24 +188,40 @@ def base():
 
 @app.route('/signup', methods=['POST','GET'])
 def signup():
-	if request.method =="POST":
-		password = request.values.get("password")
-		username = request.values.get("username")
-		email = request.values.get("email")
-		cell_number = request.values.get("cell_number")
-		unique_address = os.urandom(10).hex()
-		hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-		new_user = Users(username=username, 
-				   email=email,
-				   cell_number=cell_number, 
-				   password=hashed_password,
-				   personal_token=os.urandom(10).hex(),
-				   private_token=unique_address,
-				   payment_id='', wallet_id='')
-		db.session.add(new_user)
-		db.session.commit()
-		return jsonify({'message': 'User created!'}), 201
-	return render_template("signup.html")
+    if request.method == "POST":
+        username = request.values.get("username")
+        email = request.values.get("email")
+        cell_number = request.values.get("cell_number")
+        password = request.values.get("password")
+
+        # Check for existing user
+        existing_user = Users.query.filter_by(username=username).first()
+        if existing_user:
+            return jsonify({'error': 'Username already exists'}), 400
+
+        existing_email = Users.query.filter_by(email=email).first()
+        if existing_email:
+            return jsonify({'error': 'Email already registered'}), 400
+
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+        unique_address = os.urandom(10).hex()
+        new_user = Users(
+            username=username,
+            email=email,
+            cell_number=cell_number,
+            password=hashed_password,
+            personal_token=os.urandom(10).hex(),
+            private_token=unique_address,
+            payment_id='',        # use defaults or remove if nullable
+            wallet_id=''
+        )
+
+        db.session.add(new_user)
+        db.session.commit()
+        return jsonify({'message': 'User created!'}), 201
+
+    return render_template("signup.html")
+
 
 @app.route('/signup/wallet', methods=['POST','GET'])
 def create_wallet():
