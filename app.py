@@ -91,7 +91,7 @@ app.register_blueprint(kaggle_bp, url_prefix="/app")
 
 @login_manager.user_loader
 def load_user(user_id):
-	return Users.query.get(int(user_id))
+	return Customers.query.get(int(user_id))
 
 @app.route('/buy/cash', methods=['GET'])
 @login_required
@@ -134,7 +134,7 @@ def success():
 	session = stripe.checkout.Session.retrieve(session_id)
 	if session.payment_status == 'paid':
 		user_id = session.metadata['user_id']  # Retrieve user_id from metadata
-		user = Users.query.get_or_404(user_id)
+		user = Customers.query.get_or_404(user_id)
 		user_balance = WalletDB.query.filter_by(address=user.username).first()
 		user_balance.balance += 50  # Adding $50 to user's balance, modify as needed
 		db.session.commit()
@@ -155,7 +155,7 @@ def sell_cash():
 	if request.method == 'POST':
 		amount = request.form['amount']
 		user_id = current_user.id  # Assuming you're using Flask-Login
-		user = Users.query.get(user_id)
+		user = Customers.query.get(user_id)
 		user_balance = WalletDB.query.filter_by(address=user.username).first()
 		
 		if user_balance.balance >= float(amount):
@@ -182,75 +182,75 @@ def sell_cash():
 def base():
 	return render_template('index_base.html')
 
-# @app.route('/signup', methods=['POST','GET'])
-# def signup():
-#     if request.method == "POST":
-#         username = request.values.get("username")
-#         email = request.values.get("email")
-#         cell_number = request.values.get("cell_number")
-#         password = request.values.get("password")
+@app.route('/register', methods=['POST','GET'])
+def signup():
+    if request.method == "POST":
+        username = request.values.get("username")
+        email = request.values.get("email")
+        cell_number = request.values.get("cell_number")
+        password = request.values.get("password")
 
-#         # Check for existing user
-#         existing_user = Users.query.filter_by(username=username).first()
-#         if existing_user:
-#             return jsonify({'error': 'Username already exists'}), 400
+        # Check for existing user
+        existing_user = Customers.query.filter_by(username=username).first()
+        if existing_user:
+            return jsonify({'error': 'Username already exists'}), 400
 
-#         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-#         unique_address = os.urandom(10).hex()
-#         new_user = Users(
-#             username=username,
-#             email=email,
-#             cell_number=cell_number,
-#             password=hashed_password,
-#             personal_token=os.urandom(10).hex(),
-#             private_token=unique_address,
-#             payment_id='',        # use defaults or remove if nullable
-#             wallet_id=''
-#         )
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+        unique_address = os.urandom(10).hex()
+        new_user = Customers(
+            username=username,
+            email=email,
+            cell_number=cell_number,
+            password=hashed_password,
+            personal_token=os.urandom(10).hex(),
+            private_token=unique_address,
+            payment_id='',        # use defaults or remove if nullable
+            wallet_id=''
+        )
 
-#         db.session.add(new_user)
-#         db.session.commit()
-#         return jsonify({'message': 'User created!'}), 201
+        db.session.add(new_user)
+        db.session.commit()
+        return jsonify({'message': 'User created!'}), 201
 
-#     return render_template("signup.html")
+    return render_template("signup.html")
 
 
-# @app.route('/signup/wallet', methods=['POST','GET'])
-# def create_wallet():
-# 	if request.method =="POST":
-# 		username = request.values.get("username")
-# 		password = request.values.get("password")
-# 		users = Users.query.all()
-# 		ls = [user.username for user in users]
-# 		passwords = [user.username for user in users]
-# 		if username in ls:
-# 			if password in passwords:
-# 				data = os.urandom(10).hex()
-# 				new_wallet = WalletDB(address=username,token=username,password=password,coinbase_wallet=data)
-# 				db.session.add(new_wallet)
-# 				db.session.commit()
-# 				return jsonify({'message': 'Wallet Created!'}), 201
-# 	return render_template("signup-wallet.html")
+@app.route('/register/wallet', methods=['POST','GET'])
+def create_wallet():
+	if request.method =="POST":
+		username = request.values.get("username")
+		password = request.values.get("password")
+		users = Customers.query.all()
+		ls = [user.username for user in users]
+		passwords = [user.username for user in users]
+		if username in ls:
+			if password in passwords:
+				data = os.urandom(10).hex()
+				new_wallet = WalletDB(address=username,token=username,password=password,coinbase_wallet=data)
+				db.session.add(new_wallet)
+				db.session.commit()
+				return jsonify({'message': 'Wallet Created!'}), 201
+	return render_template("signup-wallet.html")
 
-# @app.route('/login', methods=['POST', 'GET'])
-# def login():
-# 	if request.method == "POST":
-# 		username = request.values.get("username")
-# 		password = request.values.get("password")
-# 		user = Users.query.filter_by(username=username).first()
-# 		if user and bcrypt.check_password_hash(user.password, password):
-# 			login_user(user, remember=True)  # <-- Ensure "remember=True" for session persistence
-# 			return redirect('/')
-# 		else:
-# 			flash("Invalid username or password. Please try again.", "danger")
-# 			return redirect('/login')
-# 	return render_template("login.html")
+@app.route('/sign-in', methods=['POST', 'GET'])
+def login():
+	if request.method == "POST":
+		username = request.values.get("username")
+		password = request.values.get("password")
+		user = Customers.query.filter_by(username=username).first()
+		if user and bcrypt.check_password_hash(user.password, password):
+			login_user(user, remember=True)  # <-- Ensure "remember=True" for session persistence
+			return redirect('/')
+		else:
+			flash("Invalid username or password. Please try again.", "danger")
+			return redirect('/login')
+	return render_template("login.html")
 
 
 @app.route('/get/users', methods=['GET'])
 @login_required
 def get_users():
-	users = Users.query.all()
+	users = Customers.query.all()
 	users_list = [{'id': user.id, 'username': user.username,'publicKey':str(user.personal_token)} for user in users]
 	return jsonify(users_list)
 
@@ -279,7 +279,7 @@ def buy_coins():
 		username = request.values.get('username')
 		password = request.values.get('password')
 		house = BettingHouse.query.get_or_404(1)
-		user = Users.query.filter_by(username=username).first()
+		user = Customers.query.filter_by(username=username).first()
 		wal = WalletDB.query.filter_by(address=username).first()
 		if user and bcrypt.check_password_hash(user.password, password):
 			coins = float(value*exchange)
@@ -296,12 +296,12 @@ def buy_coins():
 @app.route('/sell/coins',methods=['GET','POST'])
 def sell_coins():
 	if request.method =="POST":
-		exchange = coin.dollar_value
+		# exchange = coin.dollar_value
 		value = float(request.values.get('value'))
 		username = request.values.get('username')
 		password = request.values.get('password')
 		house = BettingHouse.query.get_or_404(1)
-		user = Users.query.filter_by(username=username).first()
+		user = Customers.query.filter_by(username=username).first()
 		wal = WalletDB.query.filter_by(address=username).first()
 		if user and bcrypt.check_password_hash(user.password, password):
 			if wal.coins >= value:

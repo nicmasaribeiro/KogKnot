@@ -142,6 +142,19 @@ class Users(UserMixin, db.Model):
     wallet_id = db.Column(db.Integer, db.ForeignKey('wallets.id'), nullable=True)
     wallet = db.relationship('WalletDB', backref='user', uselist=False)
 
+class Customers(UserMixin, db.Model):
+    __tablename__ = 'customers'
+
+    id = db.Column(db.Integer,unique=True, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password = db.Column(db.String(120), nullable=False)
+    email = db.Column(db.String(120))
+    payment_id = db.Column(db.String(1024))
+    personal_token = db.Column(db.String(3072))
+    private_token = db.Column(db.String(3072))
+    cell_number = db.Column(db.String())
+    wallet_id = db.Column(db.Integer, db.ForeignKey('wallets.id'), nullable=True)
+    wallet = db.relationship('WalletDB', backref='customers', uselist=False)
 
 class NotebookSubmission(db.Model):
     id = db.Column(db.Integer, primary_key=True)
