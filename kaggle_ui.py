@@ -29,6 +29,7 @@ from io import BytesIO
 from flask import current_app
 from markupsafe import Markup
 import markdown
+from models import *
 
 
 kaggle_bp = Blueprint("app", __name__)
@@ -578,12 +579,6 @@ def list_datasets():
 
     return render_template("list_datasets.html", files=files)
 
-# @kaggle_bp.route("/datasets")
-# @login_required
-# def list_datasets():
-#     from models import DatasetMeta
-#     files = DatasetMeta.query.order_by(DatasetMeta.uploaded_at.desc()).all()
-#     return render_template("list_datasets.html", files=files)
 
 @kaggle_bp.route("/sequential/list")
 @login_required
@@ -1268,3 +1263,68 @@ def open_saved_notebook(notebook_id):
                            saved_cells=cells,
                            notebook_id=notebook.id,
                            notebook_name=notebook.name)
+
+
+@kaggle_bp.route('/register', methods=['POST','GET'])
+def signup():
+    if request.method == "POST":
+        username = request.values.get("username")
+        email = request.values.get("email")
+        cell_number = request.values.get("cell_number")
+        password = request.values.get("password")
+
+        # Check for existing user
+        existing_user = Users.query.filter_by(username=username).first()
+        if existing_user:
+            return jsonify({'error': 'Username already exists'}), 400
+
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+        unique_address = os.urandom(10).hex()
+        new_user = Users(
+            username=username,
+            email=email,
+            cell_number=cell_number,
+            password=hashed_password,
+            personal_token=os.urandom(10).hex(),
+            private_token=unique_address,
+            payment_id='',        # use defaults or remove if nullable
+            wallet_id=''
+        )
+
+        db.session.add(new_user)
+        db.session.commit()
+        return jsonify({'message': 'User created!'}), 201
+
+    return render_template("signup.html")
+
+
+@app.route('/signup/wallet', methods=['POST','GET'])
+def create_wallet():
+	if request.method =="POST":
+		username = request.values.get("username")
+		password = request.values.get("password")
+		users = Users.query.all()
+		ls = [user.username for user in users]
+		passwords = [user.username for user in users]
+		if username in ls:
+			if password in passwords:
+				data = os.urandom(10).hex()
+				new_wallet = WalletDB(address=username,token=username,password=password,coinbase_wallet=data)
+				db.session.add(new_wallet)
+				db.session.commit()
+				return jsonify({'message': 'Wallet Created!'}), 201
+	return render_template("signup-wallet.html")
+
+@kaggle_bp.route('/login', methods=['POST', 'GET'])
+def login():
+	if request.method == "POST":
+		username = request.values.get("username")
+		password = request.values.get("password")
+		user = Users.query.filter_by(username=username).first()
+		if user and bcrypt.check_password_hash(user.password, password):
+			login_user(user, remember=True)  # <-- Ensure "remember=True" for session persistence
+			return redirect('/')
+		else:
+			flash("Invalid username or password. Please try again.", "danger")
+			return redirect('/login')
+	return render_template("login.html")
