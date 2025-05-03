@@ -1154,11 +1154,11 @@ def notebook_marketplace():
 @kaggle_bp.route("/notebook/buy/<int:notebook_id>", methods=["POST"])
 @login_required
 def buy_notebook(notebook_id):
-    from models import Users, WalletDB, db
+    from models import Customers, WalletDB, db
 
     notebook = UserNotebook.query.get_or_404(notebook_id)
     buyer = current_user
-    seller = Users.query.get_or_404(notebook.user_id)
+    seller = Customers.query.get_or_404(notebook.user_id)
     
     seller_wallet = WalletDB.query.filter_by(address=seller.username).first()
     buyer_wallet = WalletDB.query.filter_by(address=buyer.username).first()
