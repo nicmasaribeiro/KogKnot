@@ -195,10 +195,13 @@ def signup():
 		cell_number = request.values.get("cell_number")
 		unique_address = os.urandom(10).hex()
 		hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-		new_user = Users(username=username, email=email,cell_number=cell_number, 
+		new_user = Users(username=username, 
+				   email=email,
+				   cell_number=cell_number, 
 				   password=hashed_password,
 				   personal_token=os.urandom(10).hex(),
-				   private_token=unique_address)
+				   private_token=unique_address,
+				   payment_id='', wallet_id='')
 		db.session.add(new_user)
 		db.session.commit()
 		return jsonify({'message': 'User created!'}), 201
